@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "MS_Telemedicina",
+    "_postman_id": "ms-telemedicina-v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3004/api/v1" }
+  ],
+  "item": [
+    {
+      "name": "Videoconsultas",
+      "item": [
+        {
+          "name": "Crear videoconsulta",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/videoconsultas",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fecha\": \"2026-06-10T10:00:00Z\",\n  \"duracionMinutos\": 30,\n  \"motivo\": \"Control post-operatorio\",\n  \"pacienteId\": 1,\n  \"usuarioId\": 1,\n  \"crearMeet\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar videoconsultas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/videoconsultas",
+              "query": [
+                { "key": "desde", "value": "2026-06-01", "disabled": true },
+                { "key": "hasta", "value": "2026-06-30", "disabled": true },
+                { "key": "estado", "value": "PENDIENTE", "disabled": true },
+                { "key": "pacienteId", "value": "1", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener videoconsulta por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/videoconsultas/1"
+          }
+        },
+        {
+          "name": "Actualizar videoconsulta (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/videoconsultas/1",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_CURSO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar videoconsulta",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/videoconsultas/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sesiones",
+      "item": [
+        {
+          "name": "Crear sesión",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/sesiones",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inicio\": \"2026-06-10T10:05:00Z\",\n  \"notas\": \"Paciente con buena evolución\",\n  \"pacienteId\": 1,\n  \"usuarioId\": 1,\n  \"videoconsultaId\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar sesiones",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/sesiones",
+              "query": [
+                { "key": "pacienteId", "value": "1", "disabled": true },
+                { "key": "videoconsultaId", "value": "1", "disabled": true },
+                { "key": "estado", "value": "ACTIVA", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener sesión por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/sesiones/1"
+          }
+        },
+        {
+          "name": "Finalizar sesión (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/sesiones/1",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fin\": \"2026-06-10T10:35:00Z\",\n  \"estado\": \"FINALIZADA\",\n  \"notas\": \"Consulta completada sin novedades\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar sesión",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/sesiones/1"
+          }
+        }
+      ]
+    }
+  ]
+}
