@@ -1,11 +1,17 @@
 {
   "info": {
     "name": "MS_Telemedicina",
-    "_postman_id": "ms-telemedicina-v1",
+    "_postman_id": "ms-telemedicina-v2",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:3004/api/v1" }
+    { "key": "base_url", "value": "http://localhost:3005/api/v1" },
+    { "key": "videoconsulta_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "sesion_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "participante_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "paciente_id", "value": "a1b2c3d4-0000-0000-0000-000000000001" },
+    { "key": "doctor_id", "value": "a1b2c3d4-0000-0000-0000-000000000003" },
+    { "key": "usuario_id", "value": "a1b2c3d4-0000-0000-0000-000000000003" }
   ],
   "item": [
     {
@@ -19,7 +25,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fecha\": \"2026-06-10T10:00:00Z\",\n  \"duracionMinutos\": 30,\n  \"motivo\": \"Control post-operatorio\",\n  \"pacienteId\": 1,\n  \"usuarioId\": 1,\n  \"crearMeet\": false\n}"
+              "raw": "{\n  \"fecha\": \"2026-06-10T10:00:00Z\",\n  \"duracionMinutos\": 30,\n  \"motivo\": \"Control post-operatorio\",\n  \"pacienteId\": \"{{paciente_id}}\",\n  \"doctorId\": \"{{doctor_id}}\",\n  \"usuarioId\": \"{{usuario_id}}\",\n  \"crearMeet\": false\n}"
             }
           }
         },
@@ -33,23 +39,23 @@
                 { "key": "desde", "value": "2026-06-01", "disabled": true },
                 { "key": "hasta", "value": "2026-06-30", "disabled": true },
                 { "key": "estado", "value": "PENDIENTE", "disabled": true },
-                { "key": "pacienteId", "value": "1", "disabled": true }
+                { "key": "pacienteId", "value": "{{paciente_id}}", "disabled": true }
               ]
             }
           }
         },
         {
-          "name": "Obtener videoconsulta por ID",
+          "name": "Obtener videoconsulta",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/videoconsultas/1"
+            "url": "{{base_url}}/videoconsultas/{{videoconsulta_id}}"
           }
         },
         {
-          "name": "Actualizar videoconsulta (PATCH)",
+          "name": "Actualizar videoconsulta",
           "request": {
             "method": "PATCH",
-            "url": "{{base_url}}/videoconsultas/1",
+            "url": "{{base_url}}/videoconsultas/{{videoconsulta_id}}",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
@@ -61,7 +67,7 @@
           "name": "Eliminar videoconsulta",
           "request": {
             "method": "DELETE",
-            "url": "{{base_url}}/videoconsultas/1"
+            "url": "{{base_url}}/videoconsultas/{{videoconsulta_id}}"
           }
         }
       ]
@@ -77,7 +83,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"inicio\": \"2026-06-10T10:05:00Z\",\n  \"notas\": \"Paciente con buena evolución\",\n  \"pacienteId\": 1,\n  \"usuarioId\": 1,\n  \"videoconsultaId\": 1\n}"
+              "raw": "{\n  \"horaInicio\": \"2026-06-10T10:05:00Z\",\n  \"notas\": \"Paciente con buena evolución\",\n  \"pacienteId\": \"{{paciente_id}}\",\n  \"usuarioId\": \"{{usuario_id}}\",\n  \"videoconsultaId\": \"{{videoconsulta_id}}\"\n}"
             }
           }
         },
@@ -88,29 +94,29 @@
             "url": {
               "raw": "{{base_url}}/sesiones",
               "query": [
-                { "key": "pacienteId", "value": "1", "disabled": true },
-                { "key": "videoconsultaId", "value": "1", "disabled": true },
+                { "key": "pacienteId", "value": "{{paciente_id}}", "disabled": true },
+                { "key": "videoconsultaId", "value": "{{videoconsulta_id}}", "disabled": true },
                 { "key": "estado", "value": "ACTIVA", "disabled": true }
               ]
             }
           }
         },
         {
-          "name": "Obtener sesión por ID",
+          "name": "Obtener sesión",
           "request": {
             "method": "GET",
-            "url": "{{base_url}}/sesiones/1"
+            "url": "{{base_url}}/sesiones/{{sesion_id}}"
           }
         },
         {
-          "name": "Finalizar sesión (PATCH)",
+          "name": "Finalizar sesión",
           "request": {
             "method": "PATCH",
-            "url": "{{base_url}}/sesiones/1",
+            "url": "{{base_url}}/sesiones/{{sesion_id}}",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fin\": \"2026-06-10T10:35:00Z\",\n  \"estado\": \"FINALIZADA\",\n  \"notas\": \"Consulta completada sin novedades\"\n}"
+              "raw": "{\n  \"horaFin\": \"2026-06-10T10:35:00Z\",\n  \"estado\": \"FINALIZADA\",\n  \"notas\": \"Consulta completada sin novedades\"\n}"
             }
           }
         },
@@ -118,7 +124,98 @@
           "name": "Eliminar sesión",
           "request": {
             "method": "DELETE",
-            "url": "{{base_url}}/sesiones/1"
+            "url": "{{base_url}}/sesiones/{{sesion_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Meet",
+      "item": [
+        {
+          "name": "Crear link Meet",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/meet/create-link",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Videoconsulta: Control post-operatorio\",\n  \"fecha\": \"2026-06-10T10:00:00Z\",\n  \"duracionMinutos\": 30,\n  \"pacienteId\": \"{{paciente_id}}\",\n  \"usuarioId\": \"{{usuario_id}}\",\n  \"videoconsultaId\": \"{{videoconsulta_id}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Iniciar sesión",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/meet/start-session",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"videoconsultaId\": \"{{videoconsulta_id}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Finalizar sesión",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/meet/end-session",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sesionId\": \"{{sesion_id}}\",\n  \"grabacionUrl\": \"https://drive.google.com/file/grabacion-ejemplo\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Participantes",
+      "item": [
+        {
+          "name": "Agregar participante",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/participantes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sesionId\": \"{{sesion_id}}\",\n  \"usuarioId\": \"{{usuario_id}}\",\n  \"rol\": \"DOCTOR\",\n  \"conectado\": true,\n  \"fechaConexion\": \"2026-06-10T10:05:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar por sesión",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/participantes/sesion/{{sesion_id}}"
+          }
+        },
+        {
+          "name": "Obtener participante",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/participantes/{{participante_id}}"
+          }
+        },
+        {
+          "name": "Actualizar participante",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/participantes/{{participante_id}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conectado\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar participante",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/participantes/{{participante_id}}"
           }
         }
       ]

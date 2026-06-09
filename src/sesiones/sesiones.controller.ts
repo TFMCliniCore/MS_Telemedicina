@@ -1,6 +1,13 @@
 import {
-  Body, Controller, Delete, Get, Param, ParseIntPipe,
-  Patch, Post, Put, Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
 } from '@nestjs/common';
 import { SesionesService } from './sesiones.service';
 import { CreateSesionDto } from './dto/create-sesion.dto';
@@ -17,38 +24,44 @@ export class SesionesController {
 
   @Get()
   findAll(
-    @Query('desde')           desde?: string,
-    @Query('hasta')           hasta?: string,
-    @Query('estado')          estado?: string,
-    @Query('pacienteId')      pacienteId?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+    @Query('estado') estado?: string,
+    @Query('pacienteId') pacienteId?: string,
     @Query('videoconsultaId') videoconsultaId?: string,
   ) {
     return this.sesionesService.findAll({
       desde,
       hasta,
       estado,
-      pacienteId:      pacienteId      ? Number(pacienteId)      : undefined,
-      videoconsultaId: videoconsultaId ? Number(videoconsultaId) : undefined,
+      pacienteId,
+      videoconsultaId,
     });
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.sesionesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSesionDto) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateSesionDto,
+  ) {
     return this.sesionesService.update(id, dto);
   }
 
   @Put(':id')
-  replace(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSesionDto) {
+  replace(
+    @Param('id') id: string,
+    @Body() dto: UpdateSesionDto,
+  ) {
     return this.sesionesService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.sesionesService.remove(id);
   }
 }

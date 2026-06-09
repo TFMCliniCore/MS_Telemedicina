@@ -4,6 +4,8 @@ import { EntidadesClientService } from '../entidades-client/entidades-client.ser
 import { IntegracionMeetService } from '../integracion-meet/integracion-meet.service';
 import { CreateVideoconsultaDto } from './dto/create-videoconsulta.dto';
 import { UpdateVideoconsultaDto } from './dto/update-videoconsulta.dto';
+import { VIDEOCONSULTA_ESTADOS } from '../common/constants/entity-status.constants';
+
 
 @Injectable()
 export class VideoconsultasService {
@@ -11,13 +13,13 @@ export class VideoconsultasService {
     private readonly prisma: PrismaService,
     private readonly entidades: EntidadesClientService,
     private readonly meet: IntegracionMeetService,
-  ) {}
+  ) { }
 
   async create(dto: CreateVideoconsultaDto) {
     const paciente = await this.entidades.getPaciente(dto.pacienteId);
     if (dto.usuarioId) await this.entidades.getUsuario(dto.usuarioId);
 
-    let meetLink: string | undefined;
+    let enlaceMeet: string | undefined;
     let meetEventId: string | undefined;
 
     if (dto.crearMeet) {
@@ -28,7 +30,7 @@ export class VideoconsultasService {
         pacienteId: dto.pacienteId,
         usuarioId: dto.usuarioId,
       });
-      meetLink = result.meetLink;
+      enlaceMeet = result.meetLink;
       meetEventId = result.meetEventId;
     }
 
@@ -38,9 +40,9 @@ export class VideoconsultasService {
       data: {
         ...data,
         fecha: new Date(dto.fecha),
-        clienteId: paciente.cliente.id,
-        estado: 'PENDIENTE',
-        ...(meetLink    && { meetLink }),
+        clienteId: String(paciente.cliente.id),
+        estado: VIDEOCONSULTA_ESTADOS.PENDIENTE,
+        ...(enlaceMeet && { enlaceMeet }),
         ...(meetEventId && { meetEventId }),
       },
     });
@@ -50,17 +52,17 @@ export class VideoconsultasService {
     desde?: string;
     hasta?: string;
     estado?: string;
-    pacienteId?: number;
-    usuarioId?: number;
+    pacienteId?: string;
+    usuarioId?: string;
   }) {
     const videoconsultas = await this.prisma.videoconsulta.findMany({
       where: {
         eliminado: false,
-        ...(filters.desde      && { fecha: { gte: new Date(filters.desde) } }),
-        ...(filters.hasta      && { fecha: { lte: new Date(filters.hasta) } }),
-        ...(filters.estado     && { estado: filters.estado }),
-        ...(filters.pacienteId && { pacienteId: Number(filters.pacienteId) }),
-        ...(filters.usuarioId  && { usuarioId:  Number(filters.usuarioId) }),
+        ...(filters.desde && { fecha: { gte: new Date(filters.desde) } }),
+        ...(filters.hasta && { fecha: { lte: new Date(filters.hasta) } }),
+        ...(filters.estado && { estado: filters.estado }),
+        ...(filters.pacienteId && { pacienteId: String(filters.pacienteId) }),
+        ...(filters.usuarioId && { usuarioId: String(filters.usuarioId) }),
       },
       orderBy: { fecha: 'asc' },
     });
@@ -68,9 +70,9 @@ export class VideoconsultasService {
     if (videoconsultas.length === 0) return [];
 
     const pacienteIds = videoconsultas.map(v => v.pacienteId);
-    const usuarioIds  = videoconsultas
+    const usuarioIds: string[] = videoconsultas
       .map(v => v.usuarioId)
-      .filter((id): id is number => id !== null);
+      .filter((id): id is string => id !== null);
 
     const [pacientesMap, usuariosMap] = await Promise.all([
       this.entidades.getPacientesByIds(pacienteIds),
@@ -84,7 +86,7 @@ export class VideoconsultasService {
     }));
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const videoconsulta = await this.getVideoconsultaOrFail(id);
     const [paciente, usuario] = await Promise.all([
       this.entidades.getPaciente(videoconsulta.pacienteId),
@@ -95,10 +97,10 @@ export class VideoconsultasService {
     return { ...videoconsulta, paciente, usuario };
   }
 
-  async update(id: number, dto: UpdateVideoconsultaDto) {
+  async update(id: string, dto: UpdateVideoconsultaDto) {
     await this.getVideoconsultaOrFail(id);
     if (dto.pacienteId) await this.entidades.getPaciente(dto.pacienteId);
-    if (dto.usuarioId)  await this.entidades.getUsuario(dto.usuarioId);
+    if (dto.usuarioId) await this.entidades.getUsuario(dto.usuarioId);
 
     const { crearMeet, ...data } = dto;
 
@@ -111,7 +113,7 @@ export class VideoconsultasService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const videoconsulta = await this.getVideoconsultaOrFail(id);
 
     // Intentar cancelar el evento de Meet si existe
@@ -121,11 +123,11 @@ export class VideoconsultasService {
 
     return this.prisma.videoconsulta.update({
       where: { id },
-      data: { eliminado: true, estado: 'CANCELADA' },
+      data: { eliminado: true, estado: VIDEOCONSULTA_ESTADOS.CANCELADA },
     });
   }
 
-  private async getVideoconsultaOrFail(id: number) {
+  private async getVideoconsultaOrFail(id: string) {
     const v = await this.prisma.videoconsulta.findFirst({
       where: { id, eliminado: false },
     });

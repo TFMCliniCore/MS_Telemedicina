@@ -20,43 +20,42 @@ export class EntidadesClientService {
   private readonly baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.MS_ENTIDADES_URL ?? 'http://ms-entidades:3001/api/v1';
+    this.baseUrl = process.env.MS_ENTIDADES_URL ?? process.env.MS_ENTIDADES_CORE_URL ?? 'http://ms-entidades-api:3001/api/v1';
   }
 
-  // ── Validaciones individuales (para POST/PUT) ─────────────────────────────
-
-  async getPaciente(id: number): Promise<PacienteRemoto> {
+  async getPaciente(id: string | number): Promise<PacienteRemoto> {
     const res = await fetch(`${this.baseUrl}/pacientes/${id}`);
     if (res.status === 404) throw new NotFoundException(`Paciente ${id} no encontrado.`);
     if (!res.ok) throw new InternalServerErrorException(`Error ms-entidades: ${res.status}`);
     return res.json() as Promise<PacienteRemoto>;
   }
 
-  async getUsuario(id: number): Promise<UsuarioRemoto> {
+  async getUsuario(id: string | number): Promise<UsuarioRemoto> {
     const res = await fetch(`${this.baseUrl}/usuarios/${id}`);
     if (res.status === 404) throw new NotFoundException(`Usuario ${id} no encontrado.`);
     if (!res.ok) throw new InternalServerErrorException(`Error ms-entidades: ${res.status}`);
     return res.json() as Promise<UsuarioRemoto>;
   }
 
-  // ── Consultas en lote (para GET /videoconsultas, GET /sesiones, etc.) ─────
-  // ms-entidades no soporta ?ids=, así que traemos todo y filtramos en memoria
-
-  async getPacientesByIds(ids: number[]): Promise<Map<number, PacienteRemoto>> {
+  async getPacientesByIds(ids: (string | number)[]): Promise<Map<string, PacienteRemoto>> {
     if (ids.length === 0) return new Map();
     const res = await fetch(`${this.baseUrl}/pacientes`);
     if (!res.ok) throw new InternalServerErrorException(`Error ms-entidades pacientes: ${res.status}`);
     const all = await res.json() as PacienteRemoto[];
-    const idSet = new Set(ids);
-    return new Map(all.filter(p => idSet.has(p.id)).map(p => [p.id, p]));
+    const idSet = new Set(ids.map(String));
+    return new Map(
+      all.filter(p => idSet.has(String(p.id))).map(p => [String(p.id), p])
+    );
   }
 
-  async getUsuariosByIds(ids: number[]): Promise<Map<number, UsuarioRemoto>> {
+  async getUsuariosByIds(ids: (string | number)[]): Promise<Map<string, UsuarioRemoto>> {
     if (ids.length === 0) return new Map();
     const res = await fetch(`${this.baseUrl}/usuarios`);
     if (!res.ok) throw new InternalServerErrorException(`Error ms-entidades usuarios: ${res.status}`);
     const all = await res.json() as UsuarioRemoto[];
-    const idSet = new Set(ids);
-    return new Map(all.filter(u => idSet.has(u.id)).map(u => [u.id, u]));
+    const idSet = new Set(ids.map(String));
+    return new Map(
+      all.filter(u => idSet.has(String(u.id))).map(u => [String(u.id), u])
+    );
   }
 }

@@ -1,40 +1,41 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { google } from 'googleapis';
 
 export interface MeetLinkResult {
   meetLink: string;
   meetEventId: string;
 }
 
-/**
- * Servicio de integración con Google Meet.
- *
- * Actualmente expone el método `crearReunion` que:
- *  1. Llama al MS Integracion Google Meet (SCRUM-332) si la variable
- *     MS_MEET_URL está configurada.
- *  2. Retorna un link de Meet y el eventId del calendario para guardarlo
- *     en la videoconsulta.
- *
- * Si MS_MEET_URL no está configurada (entorno de desarrollo local),
- * devuelve un link de placeholder para no bloquear el flujo.
- */
 @Injectable()
 export class IntegracionMeetService {
   private readonly logger = new Logger(IntegracionMeetService.name);
-  private readonly meetUrl: string | undefined;
 
-  constructor() {
-    this.meetUrl = process.env.MS_MEET_URL;
+  private getOAuth2Client() {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI,
+    );
+    oauth2Client.setCredentials({
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    });
+    return oauth2Client;
   }
 
   async crearReunion(payload: {
     titulo: string;
     fecha: Date;
     duracionMinutos: number;
-    pacienteId: number;
-    usuarioId?: number;
+    pacienteId: string;
+    usuarioId?: string;
   }): Promise<MeetLinkResult> {
-    if (!this.meetUrl) {
-      this.logger.warn('MS_MEET_URL no configurado — usando link de placeholder.');
+    const credencialesCompletas =
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN;
+
+    if (!credencialesCompletas) {
+      this.logger.warn('Credenciales Google OAuth2 no configuradas — usando placeholder.');
       return {
         meetLink: `https://meet.google.com/placeholder-${Date.now()}`,
         meetEventId: `evt-placeholder-${Date.now()}`,
@@ -42,34 +43,61 @@ export class IntegracionMeetService {
     }
 
     try {
-      const res = await fetch(`${this.meetUrl}/reuniones`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const auth = this.getOAuth2Client();
+      const calendar = google.calendar({ version: 'v3', auth });
+
+      const inicio = payload.fecha;
+      const fin = new Date(inicio.getTime() + payload.duracionMinutos * 60 * 1000);
+
+      const evento = await calendar.events.insert({
+        calendarId: 'primary',
+        conferenceDataVersion: 1,
+        requestBody: {
+          summary: payload.titulo,
+          start: { dateTime: inicio.toISOString(), timeZone: 'America/Bogota' },
+          end:   { dateTime: fin.toISOString(),    timeZone: 'America/Bogota' },
+          conferenceData: {
+            createRequest: {
+              requestId: `meet-${Date.now()}-${payload.pacienteId}`,
+              conferenceSolutionKey: { type: 'hangoutsMeet' },
+            },
+          },
+        },
       });
 
-      if (!res.ok) {
-        throw new InternalServerErrorException(
-          `Error al crear reunión en Google Meet: ${res.status}`,
-        );
+      const meetLink = evento.data.conferenceData?.entryPoints?.find(
+        ep => ep.entryPointType === 'video',
+      )?.uri;
+
+      const meetEventId = evento.data.id;
+
+      if (!meetLink || !meetEventId) {
+        throw new InternalServerErrorException('Google Calendar no retornó un link de Meet válido.');
       }
 
-      return res.json() as Promise<MeetLinkResult>;
+      return { meetLink, meetEventId };
     } catch (err) {
-      this.logger.error('Fallo al contactar ms-meet', err);
+      this.logger.error('Error al crear evento en Google Calendar', err);
       throw new InternalServerErrorException('No se pudo crear la reunión de Google Meet.');
     }
   }
 
   async cancelarReunion(meetEventId: string): Promise<void> {
-    if (!this.meetUrl || !meetEventId || meetEventId.startsWith('evt-placeholder')) {
-      return;
-    }
+    if (meetEventId.startsWith('evt-placeholder')) return;
+
+    const credencialesCompletas =
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN;
+
+    if (!credencialesCompletas) return;
 
     try {
-      await fetch(`${this.meetUrl}/reuniones/${meetEventId}`, { method: 'DELETE' });
+      const auth = this.getOAuth2Client();
+      const calendar = google.calendar({ version: 'v3', auth });
+      await calendar.events.delete({ calendarId: 'primary', eventId: meetEventId });
     } catch (err) {
-      this.logger.error(`Fallo al cancelar reunión ${meetEventId}`, err);
+      this.logger.error(`Error al cancelar evento ${meetEventId}`, err);
     }
   }
 }

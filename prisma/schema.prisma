@@ -8,34 +8,74 @@ datasource db {
 }
 
 model Videoconsulta {
-  id              Int       @id @default(autoincrement())
+  id              String   @id @default(uuid())
   fecha           DateTime
-  duracionMinutos Int       @default(30)
-  motivo          String    @db.VarChar(500)
-  estado          String    @default("PENDIENTE") @db.VarChar(20)  // PENDIENTE | EN_CURSO | COMPLETADA | CANCELADA
-  eliminado       Boolean   @default(false)
-  meetLink        String?   @db.VarChar(500)
-  meetEventId     String?   @db.VarChar(255)
-  pacienteId      Int
-  clienteId       Int
-  usuarioId       Int?
-  sesiones        Sesion[]
+  duracionMinutos Int      @default(30)
+  motivo          String   @db.VarChar(500)
+
+  estado    String  @default("PENDIENTE") @db.VarChar(20)
+  eliminado Boolean @default(false)
+
+  enlaceMeet  String? @db.VarChar(500)
+  meetEventId String? @db.VarChar(255)
+
+  pacienteId     String
+  clienteId      String
+  doctorId       String?
+  especialidadId String?
+  usuarioId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sesiones Sesion[]
 
   @@map("videoconsultas")
 }
 
 model Sesion {
-  id              Int           @id @default(autoincrement())
-  inicio          DateTime
-  fin             DateTime?
-  notas           String?       @db.VarChar(2000)
-  estado          String        @default("ACTIVA") @db.VarChar(20)  // ACTIVA | FINALIZADA | INTERRUMPIDA
-  eliminado       Boolean       @default(false)
-  pacienteId      Int
-  clienteId       Int
-  usuarioId       Int?
-  videoconsultaId Int?
-  videoconsulta   Videoconsulta? @relation(fields: [videoconsultaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  id String @id @default(uuid())
+
+  horaInicio DateTime?
+  horaFin    DateTime?
+
+  notas        String? @db.VarChar(2000)
+  grabacionUrl String? @db.VarChar(500)
+
+  estado    String  @default("ACTIVA") @db.VarChar(20)
+  eliminado Boolean @default(false)
+
+  pacienteId String
+  clienteId  String
+  usuarioId  String?
+
+  videoconsultaId String?
+
+  createdAt DateTime @default(now())
+
+  videoconsulta Videoconsulta? @relation(fields: [videoconsultaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  participantes Participante[]
 
   @@map("sesiones")
+}
+
+model Participante {
+  id String @id @default(uuid())
+
+  sesionId  String
+  usuarioId String
+
+  rol String @db.VarChar(50)
+
+  conectado     Boolean   @default(false)
+  fechaConexion DateTime?
+
+  eliminado Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  sesion Sesion @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+
+  @@map("participantes")
 }

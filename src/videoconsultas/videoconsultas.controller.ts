@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, Param, ParseIntPipe,
+  Body, Controller, Delete, Get, Param,
   Patch, Post, Put, Query,
 } from '@nestjs/common';
 import { VideoconsultasService } from './videoconsultas.service';
@@ -23,32 +23,26 @@ export class VideoconsultasController {
     @Query('pacienteId') pacienteId?: string,
     @Query('usuarioId')  usuarioId?: string,
   ) {
-    return this.videoconsultasService.findAll({
-      desde,
-      hasta,
-      estado,
-      pacienteId: pacienteId ? Number(pacienteId) : undefined,
-      usuarioId:  usuarioId  ? Number(usuarioId)  : undefined,
-    });
+    return this.videoconsultasService.findAll({ desde, hasta, estado, pacienteId, usuarioId });
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id') id: string) {
     return this.videoconsultasService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVideoconsultaDto) {
+  update(@Param('id') id: string, @Body() dto: UpdateVideoconsultaDto) {
     return this.videoconsultasService.update(id, dto);
   }
 
   @Put(':id')
-  replace(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVideoconsultaDto) {
+  replace(@Param('id') id: string, @Body() dto: UpdateVideoconsultaDto) {
     return this.videoconsultasService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id') id: string) {
     return this.videoconsultasService.remove(id);
   }
 }
