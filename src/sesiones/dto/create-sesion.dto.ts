@@ -1,6 +1,5 @@
 import {
   IsDateString,
-  IsInt,
   IsOptional,
   IsString,
   MaxLength,
@@ -8,25 +7,25 @@ import {
 
 export class CreateSesionDto {
   @IsDateString()
-  inicio!: string;
+  horaInicio!: string;
 
   @IsOptional()
   @IsDateString()
-  fin?: string;
+  horaFin?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(2000)
   notas?: string;
 
-  @IsInt()
-  pacienteId!: number;
+  @IsString()
+  pacienteId!: string;
 
   @IsOptional()
-  @IsInt()
-  usuarioId?: number;
+  @IsString()
+  usuarioId?: string;
 
   @IsOptional()
-  @IsInt()
-  videoconsultaId?: number;
+  @IsString()
+  videoconsultaId?: string;
 }

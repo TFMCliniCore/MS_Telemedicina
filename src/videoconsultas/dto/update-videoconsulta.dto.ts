@@ -11,7 +11,7 @@ export class UpdateVideoconsultaDto extends PartialType(CreateVideoconsultaDto) 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  meetLink?: string;
+  enlaceMeet?: string;
 
   @IsOptional()
   @IsString()

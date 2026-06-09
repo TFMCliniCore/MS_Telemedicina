@@ -4,6 +4,8 @@ import { EntidadesClientModule } from './entidades-client/entidades-client.modul
 import { IntegracionMeetModule } from './integracion-meet/integracion-meet.module';
 import { VideoconsultasModule } from './videoconsultas/videoconsultas.module';
 import { SesionesModule } from './sesiones/sesiones.module';
+import { ParticipantesModule } from './participantes/participantes.module';
+import { MeetModule } from './meet/meet.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { SesionesModule } from './sesiones/sesiones.module';
     IntegracionMeetModule,
     VideoconsultasModule,
     SesionesModule,
+    ParticipantesModule,
+    MeetModule,
   ],
 })
 export class AppModule {}

@@ -9,7 +9,7 @@ async function bootstrap() {
   if (existsSync('.env')) loadEnvFile();
 
   const app = await NestFactory.create(AppModule);
-  const httpAdapterHost = app.get(HttpAdapterHost);
+  const { httpAdapter } = app.get(HttpAdapterHost);
 
   app.enableShutdownHooks();
   app.enableCors();
@@ -17,8 +17,9 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
   );
-  app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapterHost));
-
+  app.useGlobalFilters(
+    new PrismaClientExceptionFilter(httpAdapter),
+  );
   await app.listen(Number(process.env.PORT ?? 3004));
 }
 bootstrap();

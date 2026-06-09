@@ -3,9 +3,9 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsBoolean,
   MaxLength,
   Min,
-  IsBoolean,
 } from 'class-validator';
 
 export class CreateVideoconsultaDto {
@@ -15,24 +15,28 @@ export class CreateVideoconsultaDto {
   @IsOptional()
   @IsInt()
   @Min(5)
-  duracionMinutos?: number = 30;
+  duracionMinutos?: number;
 
   @IsString()
   @MaxLength(500)
   motivo!: string;
 
-  @IsInt()
-  pacienteId!: number;
+  @IsString()
+  pacienteId!: string;
 
   @IsOptional()
-  @IsInt()
-  usuarioId?: number;
+  @IsString()
+  doctorId?: string;
 
-  /**
-   * Si es true, el servicio intentará crear automáticamente
-   * un evento de Google Meet al registrar la videoconsulta.
-   */
+  @IsOptional()
+  @IsString()
+  especialidadId?: string;
+
+  @IsOptional()
+  @IsString()
+  usuarioId?: string;
+
   @IsOptional()
   @IsBoolean()
-  crearMeet?: boolean = false;
+  crearMeet?: boolean;
 }
