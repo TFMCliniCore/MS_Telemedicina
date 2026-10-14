@@ -13,6 +13,7 @@ export class MeetService {
 
   /** POST /meet/create-link — genera enlace y lo asocia a la videoconsulta */
   async createLink(dto: CreateMeetDto) {
+    if (dto.videoconsultaId) await this.getVideoconsultaOrFail(dto.videoconsultaId);
     const result = await this.integracionMeet.crearReunion({
       titulo: dto.titulo,
       fecha: new Date(dto.fecha),
@@ -22,7 +23,6 @@ export class MeetService {
     });
 
     if (dto.videoconsultaId) {
-      await this.getVideoconsultaOrFail(dto.videoconsultaId);
       await this.prisma.videoconsulta.update({
         where: { id: dto.videoconsultaId },
         data: { enlaceMeet: result.meetLink, meetEventId: result.meetEventId },
@@ -34,12 +34,32 @@ export class MeetService {
 
   /** POST /meet/start-session — inicia la sesión ligada a la videoconsulta */
   async startSession(videoconsultaId: string) {
-    const v = await this.getVideoconsultaOrFail(videoconsultaId);
+    let v = await this.getVideoconsultaOrFail(videoconsultaId);
 
-    await this.prisma.videoconsulta.update({
-      where: { id: videoconsultaId },
-      data: { estado: VIDEOCONSULTA_ESTADOS.EN_CURSO },
+    if (!v.enlaceMeet || !v.meetEventId) {
+      const reunion = await this.integracionMeet.crearReunion({
+        titulo: `Videoconsulta: ${v.motivo}`,
+        fecha: v.fecha,
+        duracionMinutos: v.duracionMinutos,
+        pacienteId: v.pacienteId,
+        usuarioId: v.usuarioId ?? undefined,
+      });
+      v = await this.prisma.videoconsulta.update({
+        where: { id: v.id },
+        data: { enlaceMeet: reunion.meetLink, meetEventId: reunion.meetEventId },
+      });
+    }
+
+    const sesionActiva = await this.prisma.sesion.findFirst({
+      where: { videoconsultaId, eliminado: false, estado: SESION_ESTADOS.ACTIVA },
     });
+    if (sesionActiva) {
+      await this.prisma.videoconsulta.update({
+        where: { id: videoconsultaId },
+        data: { estado: VIDEOCONSULTA_ESTADOS.EN_CURSO },
+      });
+      return { sesion: sesionActiva, enlaceMeet: v.enlaceMeet, meetEventId: v.meetEventId };
+    }
 
     const sesion = await this.prisma.sesion.create({
       data: {
@@ -52,7 +72,12 @@ export class MeetService {
       },
     });
 
-    return { sesion, enlaceMeet: v.enlaceMeet };
+    await this.prisma.videoconsulta.update({
+      where: { id: videoconsultaId },
+      data: { estado: VIDEOCONSULTA_ESTADOS.EN_CURSO },
+    });
+
+    return { sesion, enlaceMeet: v.enlaceMeet, meetEventId: v.meetEventId };
   }
 
   /** POST /meet/end-session — finaliza la sesión activa */
@@ -71,7 +96,7 @@ export class MeetService {
       },
     });
 
-    if (sesion.videoconsultaId) {
+    if (sesion.videoconsultaId && sesion.estado === SESION_ESTADOS.ACTIVA) {
       await this.prisma.videoconsulta.update({
         where: { id: sesion.videoconsultaId },
         data: { estado: VIDEOCONSULTA_ESTADOS.COMPLETADA },

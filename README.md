@@ -30,7 +30,10 @@ POSTGRES_PASSWORD=clinicore_pass
 POSTGRES_DB=clinicore_telemedicina_db
 DATABASE_URL=postgresql://USER:PASS@localhost:5435/clinicore_telemedicina_db?schema=public
 MS_ENTIDADES_CORE_URL=http://localhost:3001/api/v1
-# MS_MEET_URL=http://ms-integracion-meet:3005/api/v1   # Descomentar cuando SCRUM-332 esté listo
+GOOGLE_CLIENT_ID=<client-id-oauth>
+GOOGLE_CLIENT_SECRET=<secreto-oauth>
+GOOGLE_REDIRECT_URI=<redirect-uri-del-cliente-oauth>
+GOOGLE_REFRESH_TOKEN=<refresh-token-oauth>
 ```
 
 ## Levantar en desarrollo
@@ -84,11 +87,20 @@ docker-compose up --build
 
 ## Integración Google Meet (SCRUM-332)
 
-El `IntegracionMeetService` está listo y espera la URL del microservicio de Meet en `MS_MEET_URL`.
-Mientras ese servicio no esté desplegado, el campo se puede omitir o dejar comentado; el servicio
-funcionará normalmente sin generar links reales.
+`IntegracionMeetService` crea un evento en Google Calendar mediante OAuth2 y solicita una
+conferencia de Google Meet. Configure las cuatro variables `GOOGLE_*` anteriores en el entorno
+del API y habilite Google Calendar API en el proyecto de Google Cloud asociado al cliente OAuth.
+El usuario que autorizó el `GOOGLE_REFRESH_TOKEN` debe tener un calendario principal accesible y
+haber concedido el alcance `https://www.googleapis.com/auth/calendar.events` con acceso OAuth
+offline. La API admite crear eventos con `conferenceDataVersion: 1`, y Google puede aprovisionar
+la conferencia de forma asíncrona; el servicio espera la URL antes de guardar la sesión. Sin OAuth configurado, la creación
+de la reunión responde con error y no persiste un enlace ficticio ni inicia una sesión local.
 
-Para crear una videoconsulta con Meet:
+Docker Compose pasa las variables `GOOGLE_*` al contenedor; no incluya credenciales en el repositorio.
+
+Para crear una videoconsulta, el enlace real se crea al pulsar Iniciar consulta si todavía no
+existe, y se guarda en `videoconsultas.enlaceMeet` junto con el evento en `meetEventId`.
+También se puede solicitar al crear la videoconsulta:
 ```json
 POST /api/v1/videoconsultas
 {
@@ -102,7 +114,9 @@ POST /api/v1/videoconsultas
 
 ## Integración con API Gateway (SCRUM-390)
 
-Este microservicio expone su prefijo en `/api/v1` y escucha en el puerto `3004`.
-En el API Gateway, enrutar:
-- `/telemedicina/videoconsultas/**` → `http://ms-telemedicina:3004/api/v1/videoconsultas`
-- `/telemedicina/sesiones/**`       → `http://ms-telemedicina:3004/api/v1/sesiones`
+Este microservicio expone su prefijo en `/api/v1`; usa el puerto `3005` en su Compose independiente
+y `3010` en el Compose principal para convivir con MS Multisucursal.
+El seed del API Gateway registra los prefijos `/videoconsultas`, `/sesiones` y `/meet` con destino
+`MS_TELEMEDICINA_URL` (por defecto `http://host.docker.internal:3005/api/v1`). Ejecute de nuevo el
+seed del Gateway después de desplegar este cambio para registrar las rutas en su base de datos.
+En el Compose principal este destino se define como `http://ms-telemedicina:3010/api/v1`.
