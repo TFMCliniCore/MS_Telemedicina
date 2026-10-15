@@ -1,4 +1,5 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { google } from 'googleapis';
 
 export interface MeetLinkResult {
@@ -35,11 +36,9 @@ export class IntegracionMeetService {
       process.env.GOOGLE_REFRESH_TOKEN;
 
     if (!credencialesCompletas) {
-      this.logger.warn('Credenciales Google OAuth2 no configuradas — usando placeholder.');
-      return {
-        meetLink: `https://meet.google.com/placeholder-${Date.now()}`,
-        meetEventId: `evt-placeholder-${Date.now()}`,
-      };
+      throw new ServiceUnavailableException(
+        'La integración de Google Meet no está configurada. Verifique las variables de OAuth requeridas.',
+      );
     }
 
     try {
@@ -58,20 +57,35 @@ export class IntegracionMeetService {
           end:   { dateTime: fin.toISOString(),    timeZone: 'America/Bogota' },
           conferenceData: {
             createRequest: {
-              requestId: `meet-${Date.now()}-${payload.pacienteId}`,
+              requestId: randomUUID(),
               conferenceSolutionKey: { type: 'hangoutsMeet' },
             },
           },
         },
       });
 
-      const meetLink = evento.data.conferenceData?.entryPoints?.find(
+      const meetEventId = evento.data.id;
+      if (!meetEventId) {
+        throw new InternalServerErrorException('Google Calendar no retornó el identificador del evento.');
+      }
+
+      let meetLink = evento.data.conferenceData?.entryPoints?.find(
         ep => ep.entryPointType === 'video',
       )?.uri;
 
-      const meetEventId = evento.data.id;
+      // Google Calendar can return the event while Meet is still provisioning the conference.
+      for (let intento = 0; !meetLink && intento < 5; intento += 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const eventoActualizado = await calendar.events.get({
+          calendarId: 'primary',
+          eventId: meetEventId,
+        });
+        meetLink = eventoActualizado.data.conferenceData?.entryPoints?.find(
+          ep => ep.entryPointType === 'video',
+        )?.uri;
+      }
 
-      if (!meetLink || !meetEventId) {
+      if (!meetLink) {
         throw new InternalServerErrorException('Google Calendar no retornó un link de Meet válido.');
       }
 
@@ -83,8 +97,6 @@ export class IntegracionMeetService {
   }
 
   async cancelarReunion(meetEventId: string): Promise<void> {
-    if (meetEventId.startsWith('evt-placeholder')) return;
-
     const credencialesCompletas =
       process.env.GOOGLE_CLIENT_ID &&
       process.env.GOOGLE_CLIENT_SECRET &&
